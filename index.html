@@ -18,7 +18,7 @@
             <label>E-posta Adresi:</label><br>
             <input type="email" id="email" placeholder="ornek@okul.edu.tr" required><br><br>
 
-            <label>Şifre:</label><br>
+            <label>Şifre (En az 6 karakter):</label><br>
             <input type="password" id="password" placeholder="******" required><br><br>
 
             <button type="submit" id="loginBtn">Giriş Yap</button>
@@ -51,21 +51,11 @@
 
     <!-- FIREBASE AUTH & JAVASCRIPT ENTEGRASYONU -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { db } from "./firebase-config.js";
 
-        // firebase-config.js içindeki aynı konfigürasyon
-        const firebaseConfig = {
-          apiKey: "AIzaSyCcjTXHW-ZIKKqqkCRTMffGFWNkSGBYepo",
-          authDomain: "quizzapp-23d77.firebaseapp.com",
-          projectId: "quizzapp-23d77",
-          storageBucket: "quizzapp-23d77.firebasestorage.app",
-          messagingSenderId: "1074508811120",
-          appId: "1:1074508811120:web:5dfd9642a0507483ee5db5"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        // firebase-config.js içindeki app üzerinden auth başlatıyoruz
+        const auth = getAuth(db.app);
 
         // ÖĞRETMEN GİRİŞ YAP
         document.getElementById("teacherForm").addEventListener("submit", async (e) => {
