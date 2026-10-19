@@ -51,11 +51,8 @@
 
     <!-- FIREBASE AUTH & JAVASCRIPT ENTEGRASYONU -->
     <script type="module">
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { db } from "./firebase-config.js";
-
-        // firebase-config.js içindeki app üzerinden auth başlatıyoruz
-        const auth = getAuth(db.app);
+        import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { auth } from "./firebase-config.js";
 
         // ÖĞRETMEN GİRİŞ YAP
         document.getElementById("teacherForm").addEventListener("submit", async (e) => {
