@@ -1,53 +1,113 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>QuizApp - Giriş Yap</title>
+    <meta charset="UTF-8">
+    <title>QuizApp - Giriş Yap</title>
 </head>
 <body>
 
-<h1>QuizApp Platformuna Hoş Geldiniz</h1>
-<p>İnteraktif test oluşturma ve çözme platformu</p>
+    <h1>QuizApp Platformuna Hoş Geldiniz</h1>
+    <p>İnteraktif test oluşturma ve çözme platformu</p>
 
-<hr>
+    <hr>
 
-<!-- ÖĞRETMEN GİRİŞ VE KAYIT BÖLÜMÜ -->
-<section>
-  <h2>Öğretmen Girişi / Kayıt</h2>
-  <form action="dashboard.html">
-    <label>E-posta Adresi:</label><br>
-    <input type="email" placeholder="ornek@okul.edu.tr" required><br><br>
+    <!-- ÖĞRETMEN GİRİŞ VE KAYIT BÖLÜMÜ -->
+    <section>
+        <h2>Öğretmen Girişi / Kayıt</h2>
+        <form id="teacherForm">
+            <label>E-posta Adresi:</label><br>
+            <input type="email" id="email" placeholder="ornek@okul.edu.tr" required><br><br>
 
-    <label>Şifre:</label><br>
-    <input type="password" placeholder="******" required><br><br>
+            <label>Şifre:</label><br>
+            <input type="password" id="password" placeholder="******" required><br><br>
 
-    <button type="submit">Giriş Yap</button>
-    <button type="button">Hesap Oluştur (Kayıt Ol)</button>
-  </form>
-</section>
+            <button type="submit" id="loginBtn">Giriş Yap</button>
+            <button type="button" id="registerBtn">Hesap Oluştur (Kayıt Ol)</button>
+        </form>
+    </section>
 
-<br>
-<hr>
-<br>
+    <br>
+    <hr>
+    <br>
 
-<!-- ÖĞRENCİ TESTE KATILMA BÖLÜMÜ -->
-<section>
-  <h2>Öğrenci Test Girişi</h2>
-  <p>Öğretmeninizin sizinle paylaştığı test kodunu girerek sınava katılabilirsiniz.</p>
+    <!-- ÖĞRENCİ TESTE KATILMA BÖLÜMÜ -->
+    <section>
+        <h2>Öğrenci Test Girişi</h2>
+        <p>Öğretmeninizin sizinle paylaştığı test kodunu girerek sınava katılabilirsiniz.</p>
+        
+        <form id="studentForm">
+            <label>Ad Soyad:</label><br>
+            <input type="text" id="studentName" placeholder="Adınız Soyadınız" required><br><br>
 
-  <form action="Student.html">
-    <label>Ad Soyad:</label><br>
-    <input type="text" placeholder="Adınız Soyadınız" required><br><br>
+            <label>Öğrenci Numarası:</label><br>
+            <input type="text" id="studentNo" placeholder="Numaranız" required><br><br>
 
-    <label>Öğrenci Numarası:</label><br>
-    <input type="text" placeholder="Numaranız" required><br><br>
+            <label>Test / Oda Kodu:</label><br>
+            <input type="text" id="quizCode" placeholder="Örn: QUIZ-9907" required><br><br>
 
-    <label>Test / Oda Kodu:</label><br>
-    <input type="text" placeholder="Örn: ML101" required><br><br>
+            <button type="submit">Testi Başlat</button>
+        </form>
+    </section>
 
-    <button type="submit">Testi Başlat</button>
-  </form>
-</section>
+    <!-- FIREBASE AUTH & JAVASCRIPT ENTEGRASYONU -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // firebase-config.js içindeki aynı konfigürasyon
+        const firebaseConfig = {
+          apiKey: "AIzaSyCcjTXHW-ZIKKqqkCRTMffGFWNkSGBYepo",
+          authDomain: "quizzapp-23d77.firebaseapp.com",
+          projectId: "quizzapp-23d77",
+          storageBucket: "quizzapp-23d77.firebasestorage.app",
+          messagingSenderId: "1074508811120",
+          appId: "1:1074508811120:web:5dfd9642a0507483ee5db5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // ÖĞRETMEN GİRİŞ YAP
+        document.getElementById("teacherForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                alert("Giriş başarılı! Kontrol paneline yönlendiriliyorsunuz.");
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                alert("Giriş hatası: " + error.message);
+            }
+        });
+
+        // ÖĞRETMEN KAYIT OL
+        document.getElementById("registerBtn").addEventListener("click", async () => {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            if (!email || !password) {
+                alert("Lütfen kayıt olmak için e-posta ve şifre giriniz.");
+                return;
+            }
+
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert("Hesap başarıyla oluşturuldu! Kontrol paneline yönlendiriliyorsunuz.");
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                alert("Kayıt hatası: " + error.message);
+            }
+        });
+
+        // ÖĞRENCİ TESTE KATIL
+        document.getElementById("studentForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const code = document.getElementById("quizCode").value.trim();
+            window.location.href = `Student.html?code=${code}`;
+        });
+    </script>
 
 </body>
 </html>
