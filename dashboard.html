@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>QuizApp - Öğretmen Paneli</title>
+</head>
+<body>
+
+<!-- ÜST BİLGİ VE ÇIKIŞ -->
+<header>
+    <h1>Öğretmen Kontrol Paneli</h1>
+    <p>Hoş geldiniz! Buradan geçmiş testlerinizi yönetebilir veya yeni bir test oluşturabilirsiniz.</p>
+    <a href="index.html"><button type="button">Çıkış Yap</button></a>
+</header>
+
+<hr>
+
+<!-- HIZLI EYLEM -->
+<section>
+    <h2>Yeni Bir Sınav Başlatın</h2>
+    <a href="Teacher.html">
+        <button type="button" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">+ Yeni Test Oluştur</button>
+    </a>
+</section>
+
+<br>
+<hr>
+<br>
+
+<!-- GEÇMİŞ TESTLER TABLOSU -->
+<section>
+    <h2>Oluşturulan Geçmiş Testler</h2>
+
+    <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+        <tr>
+            <th>Test Adı</th>
+            <th>Oda / Test Kodu</th>
+            <th>Soru Sayısı</th>
+            <th>İşlemler</th>
+        </tr>
+        </thead>
+        <tbody id="testlerTablosu">
+        <tr>
+            <td colspan="4">Testler yükleniyor...</td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- FIREBASE & JAVASCRIPT KODU -->
+<script type="module">
+    import { db } from "./firebase-config.js";
+    import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Global kopyalama fonksiyonu
+    window.linkiKopyala = function(testKodu) {
+        const testLinki = window.location.origin + "/Student.html?code=" + testKodu;
+        navigator.clipboard.writeText(testLinki).then(() => {
+            alert("Test linki panoya kopyalandı:\n" + testLinki + "\n\nOda Kodu: " + testKodu);
+        });
+    };
+
+    async function testleriGetir() {
+        const tablosu = document.getElementById("testlerTablosu");
+
+        try {
+            const q = query(collection(db, "tests"), orderBy("olusturmaTarihi", "desc"));
+            const querySnapshot = await getDocs(q);
+
+            tablosu.innerHTML = ""; // Yükleniyor yazısını temizle
+
+            if (querySnapshot.empty) {
+                tablosu.innerHTML = '<tr><td colspan="4">Henüz oluşturulmuş bir test bulunmuyor.</td></tr>';
+                return;
+            }
+
+            querySnapshot.forEach((doc) => {
+                const test = doc.data();
+                const soruSayisi = test.sorular ? test.sorular.length : 0;
+
+                const satir = `
+                        <tr>
+                            <td>${test.baslik}</td>
+                            <td><strong>${test.testKodu}</strong></td>
+                            <td>${soruSayisi} Soru</td>
+                            <td>
+                                <a href="Student.html?code=${test.testKodu}"><button type="button">Testi İncele</button></a>
+                                <button type="button" onclick="linkiKopyala('${test.testKodu}')">Link / Kod Kopyala</button>
+                            </td>
+                        </tr>
+                    `;
+                tablosu.innerHTML += satir;
+            });
+        } catch (error) {
+            console.error("Testler çekilirken hata oluştu: ", error);
+            tablosu.innerHTML = '<tr><td colspan="4">Testler yüklenirken bir hata oluştu.</td></tr>';
+        }
+    }
+
+    testleriGetir();
+</script>
+
+</body>
+</html>

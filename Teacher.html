@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Öğretmen Paneli - Test Oluştur</title>
+</head>
+<body>
+
+<!-- ÜST BAŞLIK VE YÖNLENDİRME -->
+<header>
+    <h1>Öğretmen Paneli - Yeni Test Oluştur</h1>
+    <p>Buradan yeni bir test oluşturabilir ve istediğiniz kadar soru ekleyebilirsiniz.</p>
+    <a href="dashboard.html"><button type="button">← Kontrol Paneline Dön</button></a>
+</header>
+
+<hr>
+
+<form id="testForm">
+    <!-- Test Başlığı -->
+    <label><strong>Test Adı:</strong></label><br>
+    <input type="text" id="testBaslik" placeholder="Örn: Makine Öğrenmesi Vize Sınavı" style="width: 300px;" required><br><br>
+
+    <hr>
+
+    <!-- DİNAMİK SORULARIN EKLENECEĞİ ALAN -->
+    <div id="sorular-alani">
+
+        <!-- 1. Soru (Varsayılan) -->
+        <div class="soru-kutusu">
+            <h3>1. Soru</h3>
+
+            <label>Soru Metni:</label><br>
+            <textarea class="soruMetni" rows="4" cols="50" placeholder="Sorunuzu buraya yazın..." required></textarea><br><br>
+
+            <label>A Şıkkı:</label> <input type="text" class="sikA" required><br><br>
+            <label>B Şıkkı:</label> <input type="text" class="sikB" required><br><br>
+            <label>C Şıkkı:</label> <input type="text" class="sikC" required><br><br>
+            <label>D Şıkkı:</label> <input type="text" class="sikD" required><br><br>
+
+            <label><strong>Doğru Cevap:</strong></label>
+            <select class="dogruCevap" required>
+                <option value="A">A Şıkkı</option>
+                <option value="B">B Şıkkı</option>
+                <option value="C">C Şıkkı</option>
+                <option value="D">D Şıkkı</option>
+            </select>
+        </div>
+
+    </div>
+
+    <br><br>
+    <hr>
+
+    <!-- EYLEM BUTONLARI -->
+    <button type="button" onclick="yeniSoruEkle()" style="padding: 8px 16px; font-weight: bold;">+ Yeni Soru Ekle</button>
+    <button type="submit" style="padding: 8px 16px; font-weight: bold; background-color: #4CAF50; color: white; border: none; cursor: pointer;">Testi Yayınla ve Link Üret</button>
+</form>
+
+<!-- JAVASCRIPT & FIREBASE ENTEGRASYONU -->
+<script type="module">
+    import { db } from "./firebase-config.js";
+    import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    let soruSayisi = 1;
+
+    // Dinamik Soru Ekleme Fonksiyonu
+    window.yeniSoruEkle = function() {
+        soruSayisi++;
+        const alan = document.getElementById("sorular-alani");
+
+        const yeniSoruHTML = `
+                <div class="soru-kutusu" style="margin-top: 25px; padding-top: 15px; border-top: 2px dashed #bbb;">
+                    <h3>${soruSayisi}. Soru</h3>
+
+                    <label>Soru Metni:</label><br>
+                    <textarea class="soruMetni" rows="4" cols="50" placeholder="Sorunuzu buraya yazın..." required></textarea><br><br>
+
+                    <label>A Şıkkı:</label> <input type="text" class="sikA" required><br><br>
+                    <label>B Şıkkı:</label> <input type="text" class="sikB" required><br><br>
+                    <label>C Şıkkı:</label> <input type="text" class="sikC" required><br><br>
+                    <label>D Şıkkı:</label> <input type="text" class="sikD" required><br><br>
+
+                    <label><strong>Doğru Cevap:</strong></label>
+                    <select class="dogruCevap" required>
+                        <option value="A">A Şıkkı</option>
+                        <option value="B">B Şıkkı</option>
+                        <option value="C">C Şıkkı</option>
+                        <option value="D">D Şıkkı</option>
+                    </select>
+                </div>
+            `;
+
+        alan.insertAdjacentHTML('beforeend', yeniSoruHTML);
+    };
+
+    // Form Gönderildiğinde Veritabanına Kaydetme
+    document.getElementById("testForm").addEventListener("submit", async function(e) {
+        e.preventDefault(); // Sayfanın yenilenmesini engeller
+
+        const testBaslik = document.getElementById("testBaslik").value;
+        const soruKutulari = document.querySelectorAll(".soru-kutusu");
+
+        let sorular = [];
+
+        soruKutulari.forEach((kutu) => {
+            sorular.push({
+                metin: kutu.querySelector(".soruMetni").value,
+                sikA: kutu.querySelector(".sikA").value,
+                sikB: kutu.querySelector(".sikB").value,
+                sikC: kutu.querySelector(".sikC").value,
+                sikD: kutu.querySelector(".sikD").value,
+                dogruCevap: kutu.querySelector(".dogruCevap").value
+            });
+        });
+
+        // Rastgele Oda Kodu Üret (Örn: QUIZ-4821)
+        const testKodu = "QUIZ-" + Math.floor(1000 + Math.random() * 9000);
+
+        try {
+            // Firebase Firestore 'tests' koleksiyonuna ekle
+            await addDoc(collection(db, "tests"), {
+                baslik: testBaslik,
+                testKodu: testKodu,
+                sorular: sorular,
+                olusturmaTarihi: new Date()
+            });
+
+            alert("Test başarıyla oluşturuldu!\nOda Kodunuz: " + testKodu);
+            window.location.href = "dashboard.html";
+        } catch (error) {
+            alert("Hata oluştu: " + error.message);
+        }
+    });
+</script>
+
+</body>
+</html>

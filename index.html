@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>QuizApp - Giriş Yap</title>
+</head>
+<body>
+
+<h1>QuizApp Platformuna Hoş Geldiniz</h1>
+<p>İnteraktif test oluşturma ve çözme platformu</p>
+
+<hr>
+
+<!-- ÖĞRETMEN GİRİŞ VE KAYIT BÖLÜMÜ -->
+<section>
+  <h2>Öğretmen Girişi / Kayıt</h2>
+  <form action="dashboard.html">
+    <label>E-posta Adresi:</label><br>
+    <input type="email" placeholder="ornek@okul.edu.tr" required><br><br>
+
+    <label>Şifre:</label><br>
+    <input type="password" placeholder="******" required><br><br>
+
+    <button type="submit">Giriş Yap</button>
+    <button type="button">Hesap Oluştur (Kayıt Ol)</button>
+  </form>
+</section>
+
+<br>
+<hr>
+<br>
+
+<!-- ÖĞRENCİ TESTE KATILMA BÖLÜMÜ -->
+<section>
+  <h2>Öğrenci Test Girişi</h2>
+  <p>Öğretmeninizin sizinle paylaştığı test kodunu girerek sınava katılabilirsiniz.</p>
+
+  <form action="Student.html">
+    <label>Ad Soyad:</label><br>
+    <input type="text" placeholder="Adınız Soyadınız" required><br><br>
+
+    <label>Öğrenci Numarası:</label><br>
+    <input type="text" placeholder="Numaranız" required><br><br>
+
+    <label>Test / Oda Kodu:</label><br>
+    <input type="text" placeholder="Örn: ML101" required><br><br>
+
+    <button type="submit">Testi Başlat</button>
+  </form>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>QuizApp - Sınav Ekranı</title>
+</head>
+<body>
+
+<!-- ÜST BİLGİ VE ÖĞRENCİ BİLGİSİ -->
+<header id="testBaslikAlani">
+    <h1>Sınav Yükleniyor...</h1>
+</header>
+
+<hr>
+
+<form id="ogrenciForm">
+
+    <!-- VERİTABANINDAN DİNAMİK GELECEK SORULAR ALANI -->
+    <div id="sorularKapsayici">
+        <p>Sorular veritabanından getiriliyor, lütfen bekleyin...</p>
+    </div>
+
+    <hr><br>
+
+    <!-- TESTİ BİTİR BUTONU -->
+    <button type="submit" style="padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer;">Testi Bitir ve Cevapları Gönder</button>
+
+</form>
+
+<!-- FIREBASE & JAVASCRIPT KODU -->
+<script type="module">
+    import { db } from "./firebase-config.js";
+    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // URL'den veya yönlendirmeden test kodunu al (?code=QUIZ-XXXX)
+    const urlParams = new URLSearchParams(window.location.search);
+    let testKodu = urlParams.get('code');
+
+    if (!testKodu) {
+        testKodu = prompt("Lütfen Öğretmeninizin Verdiği Test Kodunu Giriniz (Örn: QUIZ-9907):");
+    }
+
+    async function testiYukle() {
+        const baslikAlani = document.getElementById("testBaslikAlani");
+        const sorularKapsayici = document.getElementById("sorularKapsayici");
+
+        if (!testKodu) {
+            baslikAlani.innerHTML = "<h1>Hata: Test Kodu Girilmedi!</h1>";
+            sorularKapsayici.innerHTML = "<p>Lütfen ana sayfaya dönüp geçerli bir oda kodu giriniz.</p>";
+            return;
+        }
+
+        try {
+            const q = query(collection(db, "tests"), where("testKodu", "==", testKodu.toUpperCase().trim()));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                baslikAlani.innerHTML = "<h1>Test Bulunamadı!</h1>";
+                sorularKapsayici.innerHTML = `<p><strong>${testKodu}</strong> koduna ait bir test bulunamadı. Lütfen kodu kontrol ediniz.</p>`;
+                return;
+            }
+
+            querySnapshot.forEach((doc) => {
+                const test = doc.data();
+
+                baslikAlani.innerHTML = `
+                        <h1>${test.baslik}</h1>
+                        <p><strong>Test Kodu:</strong> ${test.testKodu}</p>
+                    `;
+
+                sorularKapsayici.innerHTML = "";
+
+                test.sorular.forEach((soru, index) => {
+                    const soruHTML = `
+                            <section style="margin-bottom: 20px;">
+                                <h3>${index + 1}. ${soru.metin}</h3>
+
+                                <input type="radio" id="q${index}_a" name="q${index}" value="A" required>
+                                <label for="q${index}_a">A) ${soru.sikA}</label><br><br>
+
+                                <input type="radio" id="q${index}_b" name="q${index}" value="B">
+                                <label for="q${index}_b">B) ${soru.sikB}</label><br><br>
+
+                                <input type="radio" id="q${index}_c" name="q${index}" value="C">
+                                <label for="q${index}_c">C) ${soru.sikC}</label><br><br>
+
+                                <input type="radio" id="q${index}_d" name="q${index}" value="D">
+                                <label for="q${index}_d">D) ${soru.sikD}</label><br><br>
+                            </section>
+                            <hr>
+                        `;
+                    sorularKapsayici.innerHTML += soruHTML;
+                });
+            });
+
+        } catch (error) {
+            console.error("Test yüklenirken hata:", error);
+            baslikAlani.innerHTML = "<h1>Bir Hata Oluştu</h1>";
+        }
+    }
+
+    document.getElementById("ogrenciForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        alert("Tebrikler! Cevaplarınız başarıyla alındı ve iletildi.");
+        window.location.href = "index.html";
+    });
+
+    testiYukle();
+</script>
+
+</body>
+</html>
