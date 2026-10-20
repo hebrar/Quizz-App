@@ -6,80 +6,108 @@
 </head>
 <body>
 
-<!-- ÜST BİLGİ VE ÇIKIŞ -->
-<header>
-    <h1>Öğretmen Kontrol Paneli</h1>
-    <p>Hoş geldiniz! Buradan geçmiş testlerinizi yönetebilir veya yeni bir test oluşturabilirsiniz.</p>
-    <a href="index.html"><button type="button">Çıkış Yap</button></a>
-</header>
+    <!-- ÜST BİLGİ VE ÇIKIŞ -->
+    <header>
+        <h1>Öğretmen Kontrol Paneli</h1>
+        <p>Hoş geldiniz! Buradan geçmiş testlerinizi yönetebilir ve öğrenci sonuçlarını inceleyebilirsiniz.</p>
+        <a href="index.html"><button type="button">Çıkış Yap</button></a>
+    </header>
 
-<hr>
+    <hr>
 
-<!-- HIZLI EYLEM -->
-<section>
-    <h2>Yeni Bir Sınav Başlatın</h2>
-    <a href="Teacher.html">
-        <button type="button" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">+ Yeni Test Oluştur</button>
-    </a>
-</section>
+    <!-- HIZLI EYLEM -->
+    <section>
+        <h2>Yeni Bir Sınav Başlatın</h2>
+        <a href="Teacher.html">
+            <button type="button" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">+ Yeni Test Oluştur</button>
+        </a>
+    </section>
 
-<br>
-<hr>
-<br>
+    <br>
+    <hr>
+    <br>
 
-<!-- GEÇMİŞ TESTLER TABLOSU -->
-<section>
-    <h2>Oluşturulan Geçmiş Testler</h2>
+    <!-- GEÇMİŞ TESTLER TABLOSU -->
+    <section>
+        <h2>Oluşturulan Geçmiş Testler</h2>
+        
+        <table border="1" cellpadding="8" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Test Adı</th>
+                    <th>Oda / Test Kodu</th>
+                    <th>Soru Sayısı</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody id="testlerTablosu">
+                <tr>
+                    <td colspan="4">Testler yükleniyor...</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
 
-    <table border="1" cellpadding="8" cellspacing="0">
-        <thead>
-        <tr>
-            <th>Test Adı</th>
-            <th>Oda / Test Kodu</th>
-            <th>Soru Sayısı</th>
-            <th>İşlemler</th>
-        </tr>
-        </thead>
-        <tbody id="testlerTablosu">
-        <tr>
-            <td colspan="4">Testler yükleniyor...</td>
-        </tr>
-        </tbody>
-    </table>
-</section>
+    <br>
+    <hr>
+    <br>
 
-<!-- FIREBASE & JAVASCRIPT KODU -->
-<script type="module">
-    import { db } from "./firebase-config.js";
-    import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <!-- ÖĞRENCİ SINAV SONUÇLARI VE BAŞARI ORANLARI -->
+    <section>
+        <h2>Öğrenci Sınav Sonuçları ve Başarı Oranları</h2>
+        
+        <table border="1" cellpadding="8" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Öğrenci Adı</th>
+                    <th>Test Kodu / Adı</th>
+                    <th>Doğru</th>
+                    <th>Yanlış</th>
+                    <th>Başarı Oranı (%)</th>
+                    <th>Tarih</th>
+                </tr>
+            </thead>
+            <tbody id="sonuclarTablosu">
+                <tr>
+                    <td colspan="6">Sonuçlar yükleniyor...</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
 
-    // Global kopyalama fonksiyonu
-    window.linkiKopyala = function(testKodu) {
-        const testLinki = window.location.origin + "/Student.html?code=" + testKodu;
-        navigator.clipboard.writeText(testLinki).then(() => {
-            alert("Test linki panoya kopyalandı:\n" + testLinki + "\n\nOda Kodu: " + testKodu);
-        });
-    };
+    <!-- FIREBASE & JAVASCRIPT KODU -->
+    <script type="module">
+        import { db } from "./firebase-config.js";
+        import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    async function testleriGetir() {
-        const tablosu = document.getElementById("testlerTablosu");
+        // Global kopyalama fonksiyonu
+        window.linkiKopyala = function(testKodu) {
+            const testLinki = window.location.origin + "/Student.html?code=" + testKodu;
+            navigator.clipboard.writeText(testLinki).then(() => {
+                alert("Test linki panoya kopyalandı:\n" + testLinki + "\n\nOda Kodu: " + testKodu);
+            });
+        };
 
-        try {
-            const q = query(collection(db, "tests"), orderBy("olusturmaTarihi", "desc"));
-            const querySnapshot = await getDocs(q);
+        // TESTLERİ ÇEK
+        async function testleriGetir() {
+            const tablosu = document.getElementById("testlerTablosu");
+            
+            try {
+                const q = query(collection(db, "tests"), orderBy("olusturmaTarihi", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                tablosu.innerHTML = "";
 
-            tablosu.innerHTML = ""; // Yükleniyor yazısını temizle
+                if (querySnapshot.empty) {
+                    tablosu.innerHTML = '<tr><td colspan="4">Henüz oluşturulmuş bir test bulunmuyor.</td></tr>';
+                    return;
+                }
 
-            if (querySnapshot.empty) {
-                tablosu.innerHTML = '<tr><td colspan="4">Henüz oluşturulmuş bir test bulunmuyor.</td></tr>';
-                return;
-            }
+                querySnapshot.forEach((doc) => {
+                    const test = doc.data();
+                    const soruSayisi = test.sorular ? test.sorular.length : 0;
 
-            querySnapshot.forEach((doc) => {
-                const test = doc.data();
-                const soruSayisi = test.sorular ? test.sorular.length : 0;
-
-                const satir = `
+                    const satir = `
                         <tr>
                             <td>${test.baslik}</td>
                             <td><strong>${test.testKodu}</strong></td>
@@ -90,16 +118,50 @@
                             </td>
                         </tr>
                     `;
-                tablosu.innerHTML += satir;
-            });
-        } catch (error) {
-            console.error("Testler çekilirken hata oluştu: ", error);
-            tablosu.innerHTML = '<tr><td colspan="4">Testler yüklenirken bir hata oluştu.</td></tr>';
+                    tablosu.innerHTML += satir;
+                });
+            } catch (error) {
+                console.error("Testler çekilirken hata oluştu: ", error);
+                tablosu.innerHTML = '<tr><td colspan="4">Testler yüklenirken bir hata oluştu.</td></tr>';
+            }
         }
-    }
 
-    testleriGetir();
-</script>
+        // ÖĞRENCİ SONUÇLARINI ÇEK
+        async function sonuclariGetir() {
+            const tablosu = document.getElementById("sonuclarTablosu");
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "results"));
+                tablosu.innerHTML = "";
+
+                if (querySnapshot.empty) {
+                    tablosu.innerHTML = '<tr><td colspan="6">Henüz çözülmüş bir sınav sonucu bulunmuyor.</td></tr>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const res = doc.data();
+                    const satir = `
+                        <tr>
+                            <td><strong>${res.ogrenciAdi}</strong></td>
+                            <td>${res.testBaslik} (${res.testKodu})</td>
+                            <td style="color: green; font-weight: bold;">${res.dogruSayisi}</td>
+                            <td style="color: red; font-weight: bold;">${res.yanlisSayisi}</td>
+                            <td>%${res.puan}</td>
+                            <td>${res.tarih}</td>
+                        </tr>
+                    `;
+                    tablosu.innerHTML += satir;
+                });
+            } catch (error) {
+                console.error("Sonuçlar çekilirken hata oluştu: ", error);
+                tablosu.innerHTML = '<tr><td colspan="6">Sonuçlar yüklenirken bir hata oluştu.</td></tr>';
+            }
+        }
+
+        testleriGetir();
+        sonuclariGetir();
+    </script>
 
 </body>
 </html>
