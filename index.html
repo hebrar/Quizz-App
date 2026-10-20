@@ -11,18 +11,14 @@
 
     <hr>
 
-    <!-- ÖĞRETMEN GİRİŞ VE KAYIT BÖLÜMÜ -->
+    <!-- ÖĞRETMEN GİRİŞ BÖLÜMÜ -->
     <section>
-        <h2>Öğretmen Girişi / Kayıt</h2>
+        <h2>Öğretmen Girişi</h2>
         <form id="teacherForm">
             <label>E-posta Adresi:</label><br>
             <input type="email" id="email" placeholder="ornek@okul.edu.tr" required><br><br>
 
-            <label>Şifre (En az 6 karakter):</label><br>
-            <input type="password" id="password" placeholder="******" required><br><br>
-
-            <button type="submit" id="loginBtn">Giriş Yap</button>
-            <button type="button" id="registerBtn">Hesap Oluştur (Kayıt Ol)</button>
+            <button type="submit" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">Giriş Yap</button>
         </form>
     </section>
 
@@ -45,47 +41,17 @@
             <label>Test / Oda Kodu:</label><br>
             <input type="text" id="quizCode" placeholder="Örn: QUIZ-9907" required><br><br>
 
-            <button type="submit">Testi Başlat</button>
+            <button type="submit" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">Testi Başlat</button>
         </form>
     </section>
 
-    <!-- FIREBASE AUTH & JAVASCRIPT ENTEGRASYONU -->
-    <script type="module">
-        import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { auth } from "./firebase-config.js";
-
+    <!-- JAVASCRIPT YÖNLENDİRME KODLARI -->
+    <script>
         // ÖĞRETMEN GİRİŞ YAP
-        document.getElementById("teacherForm").addEventListener("submit", async (e) => {
+        document.getElementById("teacherForm").addEventListener("submit", (e) => {
             e.preventDefault();
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                alert("Giriş başarılı! Kontrol paneline yönlendiriliyorsunuz.");
-                window.location.href = "dashboard.html";
-            } catch (error) {
-                alert("Giriş hatası: " + error.message);
-            }
-        });
-
-        // ÖĞRETMEN KAYIT OL
-        document.getElementById("registerBtn").addEventListener("click", async () => {
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
-
-            if (!email || !password) {
-                alert("Lütfen kayıt olmak için e-posta ve şifre giriniz.");
-                return;
-            }
-
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                alert("Hesap başarıyla oluşturuldu! Kontrol paneline yönlendiriliyorsunuz.");
-                window.location.href = "dashboard.html";
-            } catch (error) {
-                alert("Kayıt hatası: " + error.message);
-            }
+            // Doğrudan Kontrol Paneline Yönlendir
+            window.location.href = "dashboard.html";
         });
 
         // ÖĞRENCİ TESTE KATIL
