@@ -9,7 +9,7 @@
     <!-- ÜST BİLGİ VE ÇIKIŞ -->
     <header>
         <h1>Öğretmen Kontrol Paneli</h1>
-        <p>Hoş geldiniz! Buradan geçmiş testlerinizi yönetebilir ve öğrenci sonuçlarını inceleyebilirsiniz.</p>
+        <p>Hoş geldiniz! Buradan geçmiş testlerinizi yönetebilir, silebilir ve öğrenci detaylı sınav analizlerini inceleyebilirsiniz.</p>
         <a href="index.html"><button type="button">Çıkış Yap</button></a>
     </header>
 
@@ -54,7 +54,7 @@
 
     <!-- ÖĞRENCİ SINAV SONUÇLARI VE BAŞARI ORANLARI -->
     <section>
-        <h2>Öğrenci Sınav Sonuçları ve Başarı Oranları</h2>
+        <h2>Öğrenci Sınav Sonuçları ve Detaylı Analiz</h2>
         
         <table border="1" cellpadding="8" cellspacing="0">
             <thead>
@@ -65,11 +65,12 @@
                     <th>Yanlış</th>
                     <th>Başarı Oranı (%)</th>
                     <th>Tarih</th>
+                    <th>Ayrıntı</th>
                 </tr>
             </thead>
             <tbody id="sonuclarTablosu">
                 <tr>
-                    <td colspan="6">Sonuçlar yükleniyor...</td>
+                    <td colspan="7">Sonuçlar yükleniyor...</td>
                 </tr>
             </tbody>
         </table>
@@ -78,14 +79,55 @@
     <!-- FIREBASE & JAVASCRIPT KODU -->
     <script type="module">
         import { db } from "./firebase-config.js";
-        import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { collection, getDocs, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Global kopyalama fonksiyonu
+        // Sonuç detaylarını saklamak için geçici hafıza
+        window.sonucDetaylariData = {};
+
+        // Global Link Kopyalama Fonksiyonu
         window.linkiKopyala = function(testKodu) {
             const testLinki = window.location.origin + "/Student.html?code=" + testKodu;
             navigator.clipboard.writeText(testLinki).then(() => {
                 alert("Test linki panoya kopyalandı:\n" + testLinki + "\n\nOda Kodu: " + testKodu);
             });
+        };
+
+        // Global Test Silme Fonksiyonu
+        window.testiSil = async function(docId, testBaslik) {
+            const onay = confirm(`"${testBaslik}" isimli testi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`);
+            if (!onay) return;
+
+            try {
+                await deleteDoc(doc(db, "tests", docId));
+                alert("Test başarıyla silindi!");
+                testleriGetir();
+            } catch (error) {
+                console.error("Test silinirken hata oluştu:", error);
+                alert("Test silinirken bir hata oluştu.");
+            }
+        };
+
+        // Global Detay Gösterme Fonksiyonu
+        window.detayGoster = function(resId) {
+            const res = window.sonucDetaylariData[resId];
+            if (!res) return;
+
+            let mesaj = `ÖĞRENCİ: ${res.ogrenciAdi}\nTEST: ${res.testBaslik} (${res.testKodu})\n`;
+            mesaj += `------------------------------------\n`;
+
+            if (res.detaylar && res.detaylar.length > 0) {
+                res.detaylar.forEach((item, index) => {
+                    const durum = item.isCorrect ? "✅ DOĞRU" : "❌ YANLIŞ";
+                    mesaj += `\nSoru ${index + 1}: ${item.soruMetni}\n`;
+                    mesaj += `Öğrencinin Cevabı: ${item.verdigiCevap}\n`;
+                    mesaj += `Doğru Cevap: ${item.dogruCevap}\n`;
+                    mesaj += `Sonuç: ${durum}\n`;
+                });
+            } else {
+                mesaj += "\nBu sonuç için soru detay kaydı bulunmuyor (Eski sürüm testi).";
+            }
+
+            alert(mesaj);
         };
 
         // TESTLERİ ÇEK
@@ -103,8 +145,9 @@
                     return;
                 }
 
-                querySnapshot.forEach((doc) => {
-                    const test = doc.data();
+                querySnapshot.forEach((documentDoc) => {
+                    const test = documentDoc.data();
+                    const docId = documentDoc.id;
                     const soruSayisi = test.sorular ? test.sorular.length : 0;
 
                     const satir = `
@@ -115,6 +158,7 @@
                             <td>
                                 <a href="Student.html?code=${test.testKodu}"><button type="button">Testi İncele</button></a>
                                 <button type="button" onclick="linkiKopyala('${test.testKodu}')">Link / Kod Kopyala</button>
+                                <button type="button" style="color: red; font-weight: bold; cursor: pointer;" onclick="testiSil('${docId}', '${test.baslik}')">Sil</button>
                             </td>
                         </tr>
                     `;
@@ -135,12 +179,15 @@
                 tablosu.innerHTML = "";
 
                 if (querySnapshot.empty) {
-                    tablosu.innerHTML = '<tr><td colspan="6">Henüz çözülmüş bir sınav sonucu bulunmuyor.</td></tr>';
+                    tablosu.innerHTML = '<tr><td colspan="7">Henüz çözülmüş bir sınav sonucu bulunmuyor.</td></tr>';
                     return;
                 }
 
-                querySnapshot.forEach((doc) => {
-                    const res = doc.data();
+                querySnapshot.forEach((documentDoc) => {
+                    const res = documentDoc.data();
+                    const resId = documentDoc.id;
+                    window.sonucDetaylariData[resId] = res;
+
                     const satir = `
                         <tr>
                             <td><strong>${res.ogrenciAdi}</strong></td>
@@ -149,13 +196,16 @@
                             <td style="color: red; font-weight: bold;">${res.yanlisSayisi}</td>
                             <td>%${res.puan}</td>
                             <td>${res.tarih}</td>
+                            <td>
+                                <button type="button" onclick="detayGoster('${resId}')" style="cursor: pointer;">Detaylı İncele</button>
+                            </td>
                         </tr>
                     `;
                     tablosu.innerHTML += satir;
                 });
             } catch (error) {
                 console.error("Sonuçlar çekilirken hata oluştu: ", error);
-                tablosu.innerHTML = '<tr><td colspan="6">Sonuçlar yüklenirken bir hata oluştu.</td></tr>';
+                tablosu.innerHTML = '<tr><td colspan="7">Sonuçlar yüklenirken bir hata oluştu.</td></tr>';
             }
         }
 
