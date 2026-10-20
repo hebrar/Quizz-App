@@ -18,9 +18,6 @@
             <label>E-posta Adresi:</label><br>
             <input type="email" id="email" placeholder="ornek@okul.edu.tr" required><br><br>
 
-            <label>Şifre (En az 6 karakter):</label><br>
-            <input type="password" id="password" placeholder="******" required><br><br>
-
             <button type="submit" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">Giriş Yap</button>
         </form>
     </section>
@@ -48,43 +45,26 @@
         </form>
     </section>
 
-    <!-- FIREBASE AUTH & JAVASCRIPT ENTEGRASYONU -->
-    <script type="module">
-        import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { auth } from "./firebase-config.js";
-
-        // ÖĞRETMEN GİRİŞ YAP VEYA OTOMATİK KAYIT OL
-        document.getElementById("teacherForm").addEventListener("submit", async (e) => {
+    <!-- JAVASCRIPT YÖNLENDİRME KODLARI -->
+    <script>
+        // ÖĞRETMEN GİRİŞ YAP -> DOĞRUDAN PANELE GİT
+        document.getElementById("teacherForm").addEventListener("submit", (e) => {
             e.preventDefault();
             const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value;
-
-            try {
-                // 1. Önce Mevcut Kullanıcı Girişini Dene
-                await signInWithEmailAndPassword(auth, email, password);
-                alert("Giriş başarılı! Kontrol paneline yönlendiriliyorsunuz.");
+            if (email) {
+                // Öğretmen e-postasını tarayıcı hafızasına kaydet ve panele geç
+                localStorage.setItem("teacherEmail", email);
                 window.location.href = "dashboard.html";
-            } catch (error) {
-                // 2. Eğer Kullanıcı Yoksa Otomatik Olarak Hesabı Oluştur ve Giriş Yaptır
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                    try {
-                        await createUserWithEmailAndPassword(auth, email, password);
-                        alert("Hesabınız oluşturuldu ve giriş yapıldı! Kontrol paneline yönlendiriliyorsunuz.");
-                        window.location.href = "dashboard.html";
-                    } catch (registerError) {
-                        alert("Hata: " + registerError.message);
-                    }
-                } else {
-                    alert("Giriş Hatası: " + error.message);
-                }
             }
         });
 
-        // ÖĞRENCİ TESTE KATIL
+        // ÖĞRENCİ TESTE KATIL -> DOĞRUDAN SINAVA GİT
         document.getElementById("studentForm").addEventListener("submit", (e) => {
             e.preventDefault();
             const code = document.getElementById("quizCode").value.trim();
-            window.location.href = `Student.html?code=${code}`;
+            if (code) {
+                window.location.href = `Student.html?code=${code}`;
+            }
         });
     </script>
 
