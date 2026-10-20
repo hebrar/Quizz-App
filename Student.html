@@ -6,75 +6,76 @@
 </head>
 <body>
 
-<!-- ÜST BİLGİ VE ÖĞRENCİ BİLGİSİ -->
-<header id="testBaslikAlani">
-    <h1>Sınav Yükleniyor...</h1>
-</header>
+    <!-- ÜST BİLGİ VE ÖĞRENCİ BİLGİSİ -->
+    <header id="testBaslikAlani">
+        <h1>Sınav Yükleniyor...</h1>
+    </header>
 
-<hr>
+    <hr>
 
-<form id="ogrenciForm">
+    <form id="ogrenciForm">
+        
+        <!-- VERİTABANINDAN DİNAMİK GELECEK SORULAR ALANI -->
+        <div id="sorularKapsayici">
+            <p>Sorular veritabanından getiriliyor, lütfen bekleyin...</p>
+        </div>
 
-    <!-- VERİTABANINDAN DİNAMİK GELECEK SORULAR ALANI -->
-    <div id="sorularKapsayici">
-        <p>Sorular veritabanından getiriliyor, lütfen bekleyin...</p>
-    </div>
+        <hr><br>
 
-    <hr><br>
+        <!-- TESTİ BİTİR BUTONU -->
+        <button type="submit" style="padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer;">Testi Bitir ve Cevapları Gönder</button>
+        
+    </form>
 
-    <!-- TESTİ BİTİR BUTONU -->
-    <button type="submit" style="padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer;">Testi Bitir ve Cevapları Gönder</button>
+    <!-- FIREBASE & JAVASCRIPT KODU -->
+    <script type="module">
+        import { db } from "./firebase-config.js";
+        import { collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-</form>
+        const urlParams = new URLSearchParams(window.location.search);
+        let testKodu = urlParams.get('code');
 
-<!-- FIREBASE & JAVASCRIPT KODU -->
-<script type="module">
-    import { db } from "./firebase-config.js";
-    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    // URL'den veya yönlendirmeden test kodunu al (?code=QUIZ-XXXX)
-    const urlParams = new URLSearchParams(window.location.search);
-    let testKodu = urlParams.get('code');
-
-    if (!testKodu) {
-        testKodu = prompt("Lütfen Öğretmeninizin Verdiği Test Kodunu Giriniz (Örn: QUIZ-9907):");
-    }
-
-    async function testiYukle() {
-        const baslikAlani = document.getElementById("testBaslikAlani");
-        const sorularKapsayici = document.getElementById("sorularKapsayici");
+        let mevcutTest = null;
 
         if (!testKodu) {
-            baslikAlani.innerHTML = "<h1>Hata: Test Kodu Girilmedi!</h1>";
-            sorularKapsayici.innerHTML = "<p>Lütfen ana sayfaya dönüp geçerli bir oda kodu giriniz.</p>";
-            return;
+            testKodu = prompt("Lütfen Öğretmeninizin Verdiği Test Kodunu Giriniz (Örn: QUIZ-9907):");
         }
 
-        try {
-            const q = query(collection(db, "tests"), where("testKodu", "==", testKodu.toUpperCase().trim()));
-            const querySnapshot = await getDocs(q);
+        async function testiYukle() {
+            const baslikAlani = document.getElementById("testBaslikAlani");
+            const sorularKapsayici = document.getElementById("sorularKapsayici");
 
-            if (querySnapshot.empty) {
-                baslikAlani.innerHTML = "<h1>Test Bulunamadı!</h1>";
-                sorularKapsayici.innerHTML = `<p><strong>${testKodu}</strong> koduna ait bir test bulunamadı. Lütfen kodu kontrol ediniz.</p>`;
+            if (!testKodu) {
+                baslikAlani.innerHTML = "<h1>Hata: Test Kodu Girilmedi!</h1>";
+                sorularKapsayici.innerHTML = "<p>Lütfen ana sayfaya dönüp geçerli bir oda kodu giriniz.</p>";
                 return;
             }
 
-            querySnapshot.forEach((doc) => {
-                const test = doc.data();
+            try {
+                const q = query(collection(db, "tests"), where("testKodu", "==", testKodu.toUpperCase().trim()));
+                const querySnapshot = await getDocs(q);
 
-                baslikAlani.innerHTML = `
-                        <h1>${test.baslik}</h1>
-                        <p><strong>Test Kodu:</strong> ${test.testKodu}</p>
+                if (querySnapshot.empty) {
+                    baslikAlani.innerHTML = "<h1>Test Bulunamadı!</h1>";
+                    sorularKapsayici.innerHTML = `<p><strong>${testKodu}</strong> koduna ait bir test bulunamadı. Lütfen kodu kontrol ediniz.</p>`;
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    mevcutTest = doc.data();
+                    
+                    baslikAlani.innerHTML = `
+                        <h1>${mevcutTest.baslik}</h1>
+                        <p><strong>Test Kodu:</strong> ${mevcutTest.testKodu}</p>
                     `;
 
-                sorularKapsayici.innerHTML = "";
+                    sorularKapsayici.innerHTML = "";
 
-                test.sorular.forEach((soru, index) => {
-                    const soruHTML = `
+                    mevcutTest.sorular.forEach((soru, index) => {
+                        const soruHTML = `
                             <section style="margin-bottom: 20px;">
-                                <h3>${index + 1}. ${soru.metin}</h3>
-
+                                <h3>${index + 1}.${soru.metin}</h3>
+                                
                                 <input type="radio" id="q${index}_a" name="q${index}" value="A" required>
                                 <label for="q${index}_a">A) ${soru.sikA}</label><br><br>
 
@@ -89,24 +90,58 @@
                             </section>
                             <hr>
                         `;
-                    sorularKapsayici.innerHTML += soruHTML;
+                        sorularKapsayici.innerHTML += soruHTML;
+                    });
                 });
+
+            } catch (error) {
+                console.error("Test yüklenirken hata:", error);
+                baslikAlani.innerHTML = "<h1>Bir Hata Oluştu</h1>";
+            }
+        }
+
+        document.getElementById("ogrenciForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            if (!mevcutTest) return;
+
+            let dogruSayisi = 0;
+            let yanlisSayisi = 0;
+            const toplamSoru = mevcutTest.sorular.length;
+
+            mevcutTest.sorular.forEach((soru, index) => {
+                const secilen = document.querySelector(`input[name="q${index}"]:checked`);
+                if (secilen && secilen.value === soru.dogruCevap) {
+                    dogruSayisi++;
+                } else {
+                    yanlisSayisi++;
+                }
             });
 
-        } catch (error) {
-            console.error("Test yüklenirken hata:", error);
-            baslikAlani.innerHTML = "<h1>Bir Hata Oluştu</h1>";
-        }
-    }
+            const basariYuzdesi = Math.round((dogruSayisi / toplamSoru) * 100);
 
-    document.getElementById("ogrenciForm").addEventListener("submit", function(e) {
-        e.preventDefault();
-        alert("Tebrikler! Cevaplarınız başarıyla alındı ve iletildi.");
-        window.location.href = "index.html";
-    });
+            try {
+                await addDoc(collection(db, "results"), {
+                    testKodu: mevcutTest.testKodu,
+                    testBaslik: mevcutTest.baslik,
+                    ogrenciAdi: prompt("Lütfen Adınızı ve Soyadınızı Giriniz:") || "İsimsiz Öğrenci",
+                    dogruSayisi: dogruSayisi,
+                    yanlisSayisi: yanlisSayisi,
+                    toplamSoru: toplamSoru,
+                    puan: basariYuzdesi,
+                    tarih: new Date().toLocaleString("tr-TR")
+                });
 
-    testiYukle();
-</script>
+                alert(`Sınavınız Tamamlandı!\n\nDoğru: ${dogruSayisi}\nYanlış: ${yanlisSayisi}\nBaşarı Oranı: \%${basariYuzdesi}`);
+                window.location.href = "index.html";
+            } catch (err) {
+                console.error("Sonuç kaydedilemedi:", err);
+                alert("Cevaplar kaydedilirken bir hata oluştu.");
+            }
+        });
+
+        testiYukle();
+    </script>
 
 </body>
 </html>
