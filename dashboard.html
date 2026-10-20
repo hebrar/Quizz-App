@@ -81,9 +81,6 @@
         import { db } from "./firebase-config.js";
         import { collection, getDocs, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Sonuç detaylarını saklamak için geçici hafıza
-        window.sonucDetaylariData = {};
-
         // Global Link Kopyalama Fonksiyonu
         window.linkiKopyala = function(testKodu) {
             const testLinki = window.location.origin + "/Student.html?code=" + testKodu;
@@ -105,29 +102,6 @@
                 console.error("Test silinirken hata oluştu:", error);
                 alert("Test silinirken bir hata oluştu.");
             }
-        };
-
-        // Global Detay Gösterme Fonksiyonu
-        window.detayGoster = function(resId) {
-            const res = window.sonucDetaylariData[resId];
-            if (!res) return;
-
-            let mesaj = `ÖĞRENCİ: ${res.ogrenciAdi}\nTEST: ${res.testBaslik} (${res.testKodu})\n`;
-            mesaj += `------------------------------------\n`;
-
-            if (res.detaylar && res.detaylar.length > 0) {
-                res.detaylar.forEach((item, index) => {
-                    const durum = item.isCorrect ? "✅ DOĞRU" : "❌ YANLIŞ";
-                    mesaj += `\nSoru ${index + 1}: ${item.soruMetni}\n`;
-                    mesaj += `Öğrencinin Cevabı: ${item.verdigiCevap}\n`;
-                    mesaj += `Doğru Cevap: ${item.dogruCevap}\n`;
-                    mesaj += `Sonuç: ${durum}\n`;
-                });
-            } else {
-                mesaj += "\nBu sonuç için soru detay kaydı bulunmuyor (Eski sürüm testi).";
-            }
-
-            alert(mesaj);
         };
 
         // TESTLERİ ÇEK
@@ -186,7 +160,6 @@
                 querySnapshot.forEach((documentDoc) => {
                     const res = documentDoc.data();
                     const resId = documentDoc.id;
-                    window.sonucDetaylariData[resId] = res;
 
                     const satir = `
                         <tr>
@@ -197,7 +170,9 @@
                             <td>%${res.puan}</td>
                             <td>${res.tarih}</td>
                             <td>
-                                <button type="button" onclick="detayGoster('${resId}')" style="cursor: pointer;">Detaylı İncele</button>
+                                <a href="ResultDetail.html?id=${resId}">
+                                    <button type="button" style="cursor: pointer;">Detaylı İncele</button>
+                                </a>
                             </td>
                         </tr>
                     `;
