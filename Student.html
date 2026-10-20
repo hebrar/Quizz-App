@@ -74,7 +74,7 @@
                     mevcutTest.sorular.forEach((soru, index) => {
                         const soruHTML = `
                             <section style="margin-bottom: 20px;">
-                                <h3>${index + 1}.${soru.metin}</h3>
+                                <h3>${index + 1}. ${soru.metin}</h3>
                                 
                                 <input type="radio" id="q${index}_a" name="q${index}" value="A" required>
                                 <label for="q${index}_a">A) ${soru.sikA}</label><br><br>
@@ -105,34 +105,48 @@
             
             if (!mevcutTest) return;
 
+            const ogrenciIsmi = prompt("Lütfen Adınızı ve Soyadınızı Giriniz:") || "İsimsiz Öğrenci";
+
             let dogruSayisi = 0;
             let yanlisSayisi = 0;
-            const toplamSoru = mevcutTest.sorular.length;
+            const detaylar = [];
 
             mevcutTest.sorular.forEach((soru, index) => {
-                const secilen = document.querySelector(`input[name="q${index}"]:checked`);
-                if (secilen && secilen.value === soru.dogruCevap) {
+                const secilenInput = document.querySelector(`input[name="q${index}"]:checked`);
+                const verdigiCevap = secilenInput ? secilenInput.value : "Boş";
+                const dogruMu = (verdigiCevap === soru.dogruCevap);
+
+                if (dogruMu) {
                     dogruSayisi++;
                 } else {
                     yanlisSayisi++;
                 }
+
+                detaylar.push({
+                    soruMetni: soru.metin,
+                    verdigiCevap: verdigiCevap,
+                    dogruCevap: soru.dogruCevap,
+                    isCorrect: dogruMu
+                });
             });
 
+            const toplamSoru = mevcutTest.sorular.length;
             const basariYuzdesi = Math.round((dogruSayisi / toplamSoru) * 100);
 
             try {
                 await addDoc(collection(db, "results"), {
                     testKodu: mevcutTest.testKodu,
                     testBaslik: mevcutTest.baslik,
-                    ogrenciAdi: prompt("Lütfen Adınızı ve Soyadınızı Giriniz:") || "İsimsiz Öğrenci",
+                    ogrenciAdi: ogrenciIsmi,
                     dogruSayisi: dogruSayisi,
                     yanlisSayisi: yanlisSayisi,
                     toplamSoru: toplamSoru,
                     puan: basariYuzdesi,
+                    detaylar: detaylar,
                     tarih: new Date().toLocaleString("tr-TR")
                 });
 
-                alert(`Sınavınız Tamamlandı!\n\nDoğru: ${dogruSayisi}\nYanlış: ${yanlisSayisi}\nBaşarı Oranı: \%${basariYuzdesi}`);
+                alert(`Sınavınız Tamamlandı!\n\nDoğru: ${dogruSayisi}\nYanlış: ${yanlisSayisi}\nBaşarı Oranı: %${basariYuzdesi}`);
                 window.location.href = "index.html";
             } catch (err) {
                 console.error("Sonuç kaydedilemedi:", err);
