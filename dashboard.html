@@ -9,8 +9,8 @@
     <!-- ÜST BİLGİ VE ÇIKIŞ -->
     <header>
         <h1>Öğretmen Kontrol Paneli</h1>
-        <p>Hoş geldiniz! Buradan geçmiş testlerinizi yönetebilir, silebilir ve öğrenci detaylı sınav analizlerini inceleyebilirsiniz.</p>
-        <a href="index.html"><button type="button">Çıkış Yap</button></a>
+        <p id="karsilamaMesaji">Hoş geldiniz! Buradan geçmiş testlerinizi yönetebilir, silebilir ve öğrenci detaylı sınav analizlerini inceleyebilirsiniz.</p>
+        <button type="button" onclick="cikisYap()">Çıkış Yap</button>
     </header>
 
     <hr>
@@ -79,9 +79,17 @@
     <!-- FIREBASE & JAVASCRIPT KODU -->
     <script type="module">
         import { db } from "./firebase-config.js";
-        import { collection, getDocs, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { collection, getDocs, query, where, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Global Link Kopyalama Fonksiyonu
+        // Aktif Öğretmen E-Postası
+        const currentTeacherEmail = localStorage.getItem("teacherEmail") || "hebrarkar@gmail.com";
+        document.getElementById("karsilamaMesaji").innerText = `Hoş geldiniz (${currentTeacherEmail})! Buradan geçmiş testlerinizi yönetebilir ve öğrenci detaylı sınav analizlerini inceleyebilirsiniz.`;
+
+        window.cikisYap = function() {
+            localStorage.removeItem("teacherEmail");
+            window.location.href = "index.html";
+        };
+
         window.linkiKopyala = function(testKodu) {
             const testLinki = window.location.origin + "/Student.html?code=" + testKodu;
             navigator.clipboard.writeText(testLinki).then(() => {
@@ -89,7 +97,6 @@
             });
         };
 
-        // Global Test Silme Fonksiyonu
         window.testiSil = async function(docId, testBaslik) {
             const onay = confirm(`"${testBaslik}" isimli testi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`);
             if (!onay) return;
@@ -104,80 +111,92 @@
             }
         };
 
-        // TESTLERİ ÇEK
+        // SADECE AKTİF ÖĞRETMENİN TESTLERİNİ GETİR
         async function testleriGetir() {
             const tablosu = document.getElementById("testlerTablosu");
             
             try {
-                const q = query(collection(db, "tests"), orderBy("olusturmaTarihi", "desc"));
+                const q = query(collection(db, "tests"));
                 const querySnapshot = await getDocs(q);
                 
                 tablosu.innerHTML = "";
-
-                if (querySnapshot.empty) {
-                    tablosu.innerHTML = '<tr><td colspan="4">Henüz oluşturulmuş bir test bulunmuyor.</td></tr>';
-                    return;
-                }
+                let bulunanTestKodlari = [];
 
                 querySnapshot.forEach((documentDoc) => {
                     const test = documentDoc.data();
                     const docId = documentDoc.id;
-                    const soruSayisi = test.sorular ? test.sorular.length : 0;
+                    
+                    // E-posta eşleşiyorsa veya eski sürümlerden kalıp hebrarkar@gmail.com ise göster
+                    if (test.teacherEmail === currentTeacherEmail || (!test.teacherEmail && currentTeacherEmail === "hebrarkar@gmail.com")) {
+                        bulunanTestKodlari.push(test.testKodu);
+                        const soruSayisi = test.sorular ? test.sorular.length : 0;
 
-                    const satir = `
-                        <tr>
-                            <td>${test.baslik}</td>
-                            <td><strong>${test.testKodu}</strong></td>
-                            <td>${soruSayisi} Soru</td>
-                            <td>
-                                <a href="Student.html?code=${test.testKodu}"><button type="button">Testi İncele</button></a>
-                                <button type="button" onclick="linkiKopyala('${test.testKodu}')">Link / Kod Kopyala</button>
-                                <button type="button" style="color: red; font-weight: bold; cursor: pointer;" onclick="testiSil('${docId}', '${test.baslik}')">Sil</button>
-                            </td>
-                        </tr>
-                    `;
-                    tablosu.innerHTML += satir;
+                        const satir = `
+                            <tr>
+                                <td>${test.baslik}</td>
+                                <td><strong>${test.testKodu}</strong></td>
+                                <td>${soruSayisi} Soru</td>
+                                <td>
+                                    <a href="Student.html?code=${test.testKodu}"><button type="button">Testi İncele</button></a>
+                                    <button type="button" onclick="linkiKopyala('${test.testKodu}')">Link / Kod Kopyala</button>
+                                    <button type="button" style="color: red; font-weight: bold; cursor: pointer;" onclick="testiSil('${docId}', '${test.baslik}')">Sil</button>
+                                </td>
+                            </tr>
+                        `;
+                        tablosu.innerHTML += satir;
+                    }
                 });
+
+                if (bulunanTestKodlari.length === 0) {
+                    tablosu.innerHTML = '<tr><td colspan="4">Henüz oluşturduğunuz bir test bulunmuyor. "+ Yeni Test Oluştur" butonunu kullanarak sınav ekleyebilirsiniz.</td></tr>';
+                }
+
+                sonuclariGetir(bulunanTestKodlari);
+
             } catch (error) {
                 console.error("Testler çekilirken hata oluştu: ", error);
                 tablosu.innerHTML = '<tr><td colspan="4">Testler yüklenirken bir hata oluştu.</td></tr>';
             }
         }
 
-        // ÖĞRENCİ SONUÇLARINI ÇEK
-        async function sonuclariGetir() {
+        // SADECE BU ÖĞRETMENİN TESTLERİNE AİT SONUÇLARI GETİR
+        async function sonuclariGetir(ogretmenTestKodlari) {
             const tablosu = document.getElementById("sonuclarTablosu");
             
             try {
                 const querySnapshot = await getDocs(collection(db, "results"));
                 tablosu.innerHTML = "";
-
-                if (querySnapshot.empty) {
-                    tablosu.innerHTML = '<tr><td colspan="7">Henüz çözülmüş bir sınav sonucu bulunmuyor.</td></tr>';
-                    return;
-                }
+                let sonucVarMi = false;
 
                 querySnapshot.forEach((documentDoc) => {
                     const res = documentDoc.data();
                     const resId = documentDoc.id;
 
-                    const satir = `
-                        <tr>
-                            <td><strong>${res.ogrenciAdi}</strong></td>
-                            <td>${res.testBaslik} (${res.testKodu})</td>
-                            <td style="color: green; font-weight: bold;">${res.dogruSayisi}</td>
-                            <td style="color: red; font-weight: bold;">${res.yanlisSayisi}</td>
-                            <td>%${res.puan}</td>
-                            <td>${res.tarih}</td>
-                            <td>
-                                <a href="ResultDetail.html?id=${resId}">
-                                    <button type="button" style="cursor: pointer;">Detaylı İncele</button>
-                                </a>
-                            </td>
-                        </tr>
-                    `;
-                    tablosu.innerHTML += satir;
+                    if (ogretmenTestKodlari.includes(res.testKodu)) {
+                        sonucVarMi = true;
+                        const satir = `
+                            <tr>
+                                <td><strong>${res.ogrenciAdi}</strong></td>
+                                <td>${res.testBaslik} (${res.testKodu})</td>
+                                <td style="color: green; font-weight: bold;">${res.dogruSayisi}</td>
+                                <td style="color: red; font-weight: bold;">${res.yanlisSayisi}</td>
+                                <td>%${res.puan}</td>
+                                <td>${res.tarih}</td>
+                                <td>
+                                    <a href="ResultDetail.html?id=${resId}">
+                                        <button type="button" style="cursor: pointer;">Detaylı İncele</button>
+                                    </a>
+                                </td>
+                            </tr>
+                        `;
+                        tablosu.innerHTML += satir;
+                    }
                 });
+
+                if (!sonucVarMi) {
+                    tablosu.innerHTML = '<tr><td colspan="7">Henüz testlerinizi çözen bir öğrenci sonucu bulunmuyor.</td></tr>';
+                }
+
             } catch (error) {
                 console.error("Sonuçlar çekilirken hata oluştu: ", error);
                 tablosu.innerHTML = '<tr><td colspan="7">Sonuçlar yüklenirken bir hata oluştu.</td></tr>';
@@ -185,7 +204,6 @@
         }
 
         testleriGetir();
-        sonuclariGetir();
     </script>
 
 </body>
