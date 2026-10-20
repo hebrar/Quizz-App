@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>QuizApp - Sınav Sonuç Detayı</title>
+</head>
+<body>
+
+<!-- ÜST BİLGİ -->
+<header id="ustBilgi">
+    <h1>Öğrenci Sınav Analizi</h1>
+    <p>Sonuçlar yükleniyor...</p>
+</header>
+
+<a href="dashboard.html"><button type="button">← Kontrol Paneline Dön</button></a>
+
+<hr><br>
+
+<!-- DETAY TABLOSU -->
+<section>
+    <h2>Soru Bazlı Cevap Analizi</h2>
+
+    <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; text-align: left;">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Soru Metni</th>
+            <th>Öğrencinin Cevabı</th>
+            <th>Doğru Cevap</th>
+            <th>Durum</th>
+        </tr>
+        </thead>
+        <tbody id="detayTablosu">
+        <tr>
+            <td colspan="5">Detaylar getiriliyor...</td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- FIREBASE ENTEGRASYONU -->
+<script type="module">
+    import { db } from "./firebase-config.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const resultId = urlParams.get('id');
+
+    async function detaylariGetir() {
+        const ustBilgi = document.getElementById("ustBilgi");
+        const detayTablosu = document.getElementById("detayTablosu");
+
+        if (!resultId) {
+            ustBilgi.innerHTML = "<h1>Hata: Sonuç Kimliği Bulunamadı!</h1>";
+            detayTablosu.innerHTML = '<tr><td colspan="5">Geçersiz erişim.</td></tr>';
+            return;
+        }
+
+        try {
+            const docRef = doc(db, "results", resultId);
+            const docSnap = await getDoc(docRef);
+
+            if (!docSnap.exists()) {
+                ustBilgi.innerHTML = "<h1>Sonuç Kaydı Bulunamadı!</h1>";
+                detayTablosu.innerHTML = '<tr><td colspan="5">Veritabanında böyle bir sonuç kaydı yok.</td></tr>';
+                return;
+            }
+
+            const res = docSnap.data();
+
+            ustBilgi.innerHTML = `
+                    <h1>${res.ogrenciAdi} - Sınav Analizi</h1>
+                    <p><strong>Test:</strong> ${res.testBaslik} (${res.testKodu}) | <strong>Tarih:</strong> ${res.tarih}</p>
+                    <p><strong>Doğru:</strong> ${res.dogruSayisi} | <strong>Yanlış:</strong> ${res.yanlisSayisi} | <strong>Başarı Oranı:</strong> %${res.puan}</p>
+                `;
+
+            detayTablosu.innerHTML = "";
+
+            if (res.detaylar && res.detaylar.length > 0) {
+                res.detaylar.forEach((item, index) => {
+                    const durumMetni = item.isCorrect ? "✅ Doğru" : "❌ Yanlış";
+                    const durumRengi = item.isCorrect ? "green" : "red";
+
+                    const satir = `
+                            <tr>
+                                <td><strong>${index + 1}</strong></td>
+                                <td>${item.soruMetni}</td>
+                                <td><strong>${item.verdigiCevap} Şıkkı</strong></td>
+                                <td><strong>${item.dogruCevap} Şıkkı</strong></td>
+                                <td style="color: ${durumRengi}; font-weight: bold;">${durumMetni}</td>
+                            </tr>
+                        `;
+                    detayTablosu.innerHTML += satir;
+                });
+            } else {
+                detayTablosu.innerHTML = '<tr><td colspan="5">Bu sonuç eski sürümde çözüldüğü için detaylı soru dökümü bulunmuyor. Yeni çözülen sınavların detayları burada görünecektir.</td></tr>';
+            }
+
+        } catch (error) {
+            console.error("Detaylar çekilirken hata:", error);
+            detayTablosu.innerHTML = '<tr><td colspan="5">Bir hata oluştu.</td></tr>';
+        }
+    }
+
+    detaylariGetir();
+</script>
+
+</body>
+</html>
