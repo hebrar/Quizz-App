@@ -2,86 +2,78 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Öğretmen Paneli - Test Oluştur</title>
+    <title>QuizApp - Test Oluştur</title>
 </head>
 <body>
 
-<!-- ÜST BAŞLIK VE YÖNLENDİRME -->
-<header>
-    <h1>Öğretmen Paneli - Yeni Test Oluştur</h1>
-    <p>Buradan yeni bir test oluşturabilir ve istediğiniz kadar soru ekleyebilirsiniz.</p>
-    <a href="dashboard.html"><button type="button">← Kontrol Paneline Dön</button></a>
-</header>
-
-<hr>
-
-<form id="testForm">
-    <!-- Test Başlığı -->
-    <label><strong>Test Adı:</strong></label><br>
-    <input type="text" id="testBaslik" placeholder="Örn: Makine Öğrenmesi Vize Sınavı" style="width: 300px;" required><br><br>
+    <!-- ÜST BİLGİ VE NAVİGASYON -->
+    <header>
+        <h1>Yeni Test Oluşturma Ekranı</h1>
+        <p>Aşağıdan sınav başlığını girip istediğiniz kadar soru ekleyebilirsiniz.</p>
+        <a href="dashboard.html"><button type="button">← Kontrol Paneline Dön</button></a>
+    </header>
 
     <hr>
 
-    <!-- DİNAMİK SORULARIN EKLENECEĞİ ALAN -->
-    <div id="sorular-alani">
+    <!-- TEST OLUŞTURMA FORMU -->
+    <form id="testForm">
+        <section>
+            <h2>1. Test Genel Bilgileri</h2>
+            <label>Test / Sınav Başlığı:</label><br>
+            <input type="text" id="testBaslik" placeholder="Örn: Yapay Zekaya Giriş - Vize Sınavı" required style="width: 300px;"><br><br>
+        </section>
 
-        <!-- 1. Soru (Varsayılan) -->
-        <div class="soru-kutusu">
-            <h3>1. Soru</h3>
+        <hr>
 
-            <label>Soru Metni:</label><br>
-            <textarea class="soruMetni" rows="4" cols="50" placeholder="Sorunuzu buraya yazın..." required></textarea><br><br>
+        <section>
+            <h2>2. Soru Ekleme Alanı</h2>
+            <div id="sorularKapsayici">
+                <!-- Dinamik Sorular Buraya Eklenecek -->
+            </div>
 
-            <label>A Şıkkı:</label> <input type="text" class="sikA" required><br><br>
-            <label>B Şıkkı:</label> <input type="text" class="sikB" required><br><br>
-            <label>C Şıkkı:</label> <input type="text" class="sikC" required><br><br>
-            <label>D Şıkkı:</label> <input type="text" class="sikD" required><br><br>
+            <br>
+            <button type="button" id="soruEkleBtn" style="padding: 8px 16px; font-weight: bold; cursor: pointer;">+ Soru Ekle</button>
+        </section>
 
-            <label><strong>Doğru Cevap:</strong></label>
-            <select class="dogruCevap" required>
-                <option value="A">A Şıkkı</option>
-                <option value="B">B Şıkkı</option>
-                <option value="C">C Şıkkı</option>
-                <option value="D">D Şıkkı</option>
-            </select>
-        </div>
+        <br><hr><br>
 
-    </div>
+        <button type="submit" style="padding: 12px 24px; font-size: 16px; font-weight: bold; background-color: #4CAF50; color: white; border: none; cursor: pointer;">Testi Kaydet ve Yayınla</button>
+    </form>
 
-    <br><br>
-    <hr>
+    <!-- FIREBASE & JAVASCRIPT KODU -->
+    <script type="module">
+        import { db } from "./firebase-config.js";
+        import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <!-- EYLEM BUTONLARI -->
-    <button type="button" onclick="yeniSoruEkle()" style="padding: 8px 16px; font-weight: bold;">+ Yeni Soru Ekle</button>
-    <button type="submit" style="padding: 8px 16px; font-weight: bold; background-color: #4CAF50; color: white; border: none; cursor: pointer;">Testi Yayınla ve Link Üret</button>
-</form>
+        // GÜVENLİK: ÖĞRETMEN PIN KONTROLÜ
+        const OGRETMEN_PIN = "1234"; // Dilerseniz buradaki PIN kodunu değiştirebilirsiniz
 
-<!-- JAVASCRIPT & FIREBASE ENTEGRASYONU -->
-<script type="module">
-    import { db } from "./firebase-config.js";
-    import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        const girilenPin = prompt("Lütfen Test Oluşturmak İçin Öğretmen PIN Kodunu Giriniz:");
+        if (girilenPin !== OGRETMEN_PIN) {
+            alert("Hatalı PIN Kodu! Kontrol paneline yönlendiriliyorsunuz.");
+            window.location.href = "dashboard.html";
+        }
 
-    let soruSayisi = 1;
+        let soruSayaci = 0;
 
-    // Dinamik Soru Ekleme Fonksiyonu
-    window.yeniSoruEkle = function() {
-        soruSayisi++;
-        const alan = document.getElementById("sorular-alani");
+        function yeniSoruEkle() {
+            soruSayaci++;
+            const sorularKapsayici = document.getElementById("sorularKapsayici");
 
-        const yeniSoruHTML = `
-                <div class="soru-kutusu" style="margin-top: 25px; padding-top: 15px; border-top: 2px dashed #bbb;">
-                    <h3>${soruSayisi}. Soru</h3>
-
+            const soruHTML = `
+                <div class="soru-kart" id="soru_${soruSayaci}" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 15px;">
+                    <h3>Soru ${soruSayaci}</h3>
+                    
                     <label>Soru Metni:</label><br>
-                    <textarea class="soruMetni" rows="4" cols="50" placeholder="Sorunuzu buraya yazın..." required></textarea><br><br>
+                    <textarea class="soru-metin" rows="2" style="width: 100%;" required placeholder="Soruyu buraya yazınız..."></textarea><br><br>
 
-                    <label>A Şıkkı:</label> <input type="text" class="sikA" required><br><br>
-                    <label>B Şıkkı:</label> <input type="text" class="sikB" required><br><br>
-                    <label>C Şıkkı:</label> <input type="text" class="sikC" required><br><br>
-                    <label>D Şıkkı:</label> <input type="text" class="sikD" required><br><br>
+                    <label>A Şıkkı:</label> <input type="text" class="sik-a" required><br><br>
+                    <label>B Şıkkı:</label> <input type="text" class="sik-b" required><br><br>
+                    <label>C Şıkkı:</label> <input type="text" class="sik-c" required><br><br>
+                    <label>D Şıkkı:</label> <input type="text" class="sik-d" required><br><br>
 
-                    <label><strong>Doğru Cevap:</strong></label>
-                    <select class="dogruCevap" required>
+                    <label><strong>Doğru Cevap Hangi Şık?</strong></label>
+                    <select class="dogru-cevap" required>
                         <option value="A">A Şıkkı</option>
                         <option value="B">B Şıkkı</option>
                         <option value="C">C Şıkkı</option>
@@ -89,49 +81,53 @@
                     </select>
                 </div>
             `;
-
-        alan.insertAdjacentHTML('beforeend', yeniSoruHTML);
-    };
-
-    // Form Gönderildiğinde Veritabanına Kaydetme
-    document.getElementById("testForm").addEventListener("submit", async function(e) {
-        e.preventDefault(); // Sayfanın yenilenmesini engeller
-
-        const testBaslik = document.getElementById("testBaslik").value;
-        const soruKutulari = document.querySelectorAll(".soru-kutusu");
-
-        let sorular = [];
-
-        soruKutulari.forEach((kutu) => {
-            sorular.push({
-                metin: kutu.querySelector(".soruMetni").value,
-                sikA: kutu.querySelector(".sikA").value,
-                sikB: kutu.querySelector(".sikB").value,
-                sikC: kutu.querySelector(".sikC").value,
-                sikD: kutu.querySelector(".sikD").value,
-                dogruCevap: kutu.querySelector(".dogruCevap").value
-            });
-        });
-
-        // Rastgele Oda Kodu Üret (Örn: QUIZ-4821)
-        const testKodu = "QUIZ-" + Math.floor(1000 + Math.random() * 9000);
-
-        try {
-            // Firebase Firestore 'tests' koleksiyonuna ekle
-            await addDoc(collection(db, "tests"), {
-                baslik: testBaslik,
-                testKodu: testKodu,
-                sorular: sorular,
-                olusturmaTarihi: new Date()
-            });
-
-            alert("Test başarıyla oluşturuldu!\nOda Kodunuz: " + testKodu);
-            window.location.href = "dashboard.html";
-        } catch (error) {
-            alert("Hata oluştu: " + error.message);
+            
+            sorularKapsayici.innerHTML += soruHTML;
         }
-    });
-</script>
+
+        // Sayfa açıldığında otomatik 1. soruyu ekle
+        yeniSoruEkle();
+
+        document.getElementById("soruEkleBtn").addEventListener("click", yeniSoruEkle);
+
+        // TESTİ KAYDET
+        document.getElementById("testForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            const baslik = document.getElementById("testBaslik").value.trim();
+            const soruKartlari = document.querySelectorAll(".soru-kart");
+            const sorular = [];
+
+            soruKartlari.forEach((kart) => {
+                const metin = kart.querySelector(".soru-metin").value.trim();
+                const sikA = kart.querySelector(".sik-a").value.trim();
+                const sikB = kart.querySelector(".sik-b").value.trim();
+                const sikC = kart.querySelector(".sik-c").value.trim();
+                const sikD = kart.querySelector(".sik-d").value.trim();
+                const dogruCevap = kart.querySelector(".dogru-cevap").value;
+
+                sorular.push({ metin, sikA, sikB, sikC, sikD, dogruCevap });
+            });
+
+            // Rastgele Oda Kodu Üret (Örn: QUIZ-4821)
+            const rastgeleKod = "QUIZ-" + Math.floor(1000 + Math.random() * 9000);
+
+            try {
+                await addDoc(collection(db, "tests"), {
+                    baslik: baslik,
+                    testKodu: rastgeleKod,
+                    sorular: sorular,
+                    olusturmaTarihi: new Date().toISOString()
+                });
+
+                alert(`Test Başarıyla Oluşturuldu!\n\nTest / Oda Kodu: ${rastgeleKod}`);
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                console.error("Test kaydedilirken hata oluştu: ", error);
+                alert("Test kaydedilirken bir hata oluştu.");
+            }
+        });
+    </script>
 
 </body>
 </html>
