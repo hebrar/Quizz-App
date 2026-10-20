@@ -46,7 +46,7 @@
         import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // GÜVENLİK: ÖĞRETMEN PIN KONTROLÜ
-        const OGRETMEN_PIN = "1234"; // Dilerseniz buradaki PIN kodunu değiştirebilirsiniz
+        const OGRETMEN_PIN = "1234";
 
         const girilenPin = prompt("Lütfen Test Oluşturmak İçin Öğretmen PIN Kodunu Giriniz:");
         if (girilenPin !== OGRETMEN_PIN) {
@@ -85,7 +85,6 @@
             sorularKapsayici.innerHTML += soruHTML;
         }
 
-        // Sayfa açıldığında otomatik 1. soruyu ekle
         yeniSoruEkle();
 
         document.getElementById("soruEkleBtn").addEventListener("click", yeniSoruEkle);
@@ -97,6 +96,9 @@
             const baslik = document.getElementById("testBaslik").value.trim();
             const soruKartlari = document.querySelectorAll(".soru-kart");
             const sorular = [];
+            
+            // Giriş yapan öğretmenin e-postası
+            const teacherEmail = localStorage.getItem("teacherEmail") || "hebrarkar@gmail.com";
 
             soruKartlari.forEach((kart) => {
                 const metin = kart.querySelector(".soru-metin").value.trim();
@@ -109,7 +111,6 @@
                 sorular.push({ metin, sikA, sikB, sikC, sikD, dogruCevap });
             });
 
-            // Rastgele Oda Kodu Üret (Örn: QUIZ-4821)
             const rastgeleKod = "QUIZ-" + Math.floor(1000 + Math.random() * 9000);
 
             try {
@@ -117,6 +118,7 @@
                     baslik: baslik,
                     testKodu: rastgeleKod,
                     sorular: sorular,
+                    teacherEmail: teacherEmail,
                     olusturmaTarihi: new Date().toISOString()
                 });
 
